@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metadata-sjekker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+        <h1 class="site-title">Metadata-sjekker</h1>
+      </div>
+      <p class="site-desc">Analyser metadata, SEO og tilgjengelegheit for kva som helst URL</p>
+    </div>
+  </header>
+
+  <main class="container" id="main-content">
+    <!-- Input form -->
+    <section class="input-section card" aria-label="URL-inndata">
+      <form id="check-form" novalidate>
+        <div class="form-row">
+          <label for="url-input" class="sr-only">URL å sjekke</label>
+          <input
+            type="url"
+            id="url-input"
+            name="url"
+            class="url-input"
+            placeholder="https://eksempel.no"
+            autocomplete="url"
+            spellcheck="false"
+            required
+            aria-describedby="url-hint"
+          >
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span class="btn-text">Sjekk URL</span>
+            <span class="btn-spinner" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div class="form-options">
+          <label class="toggle-label" id="js-toggle-label">
+            <span class="toggle-wrap">
+              <input type="checkbox" id="render-js" name="renderJs" role="switch" aria-checked="false">
+              <span class="toggle-track" aria-hidden="true"></span>
+            </span>
+            <span class="toggle-text">Render JavaScript</span>
+            <span class="toggle-badge" id="js-badge" hidden>Krev Puppeteer</span>
+          </label>
+          <span id="js-unavailable-note" class="form-note" hidden>
+            JS-rendering er ikkje tilgjengeleg (Puppeteer ikkje installert)
+          </span>
+        </div>
+        <p id="url-hint" class="form-note">Skriv inn ein fullstendig URL inkludert https://</p>
+      </form>
+    </section>
+
+    <!-- Error banner -->
+    <div id="error-banner" class="error-banner" role="alert" aria-live="polite" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="error-message"></span>
+    </div>
+
+    <!-- Results area -->
+    <div id="results-area" hidden>
+      <!-- Result meta header -->
+      <div class="result-header card">
+        <div class="result-url-row">
+          <span class="result-label">Analysert URL:</span>
+          <a id="result-url-link" href="#" target="_blank" rel="noopener" class="result-url-text"></a>
+        </div>
+        <div class="result-meta-row">
+          <span id="result-status" class="status-chip"></span>
+          <span id="result-render-mode" class="status-chip"></span>
+          <span id="result-time" class="status-chip muted"></span>
+        </div>
+      </div>
+
+      <!-- Warnings card -->
+      <div id="warnings-section" class="warnings-card card" hidden>
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Åtvaringar og tips
+        </h2>
+        <ul id="warnings-list" class="warnings-list"></ul>
+      </div>
+
+      <!-- Tab navigation -->
+      <nav class="tab-nav" aria-label="Resultatfaner" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-meta" data-tab="meta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>
+          </svg>
+          Metadata
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-preview" data-tab="preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Forhåndsvisning
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-seo" data-tab="seo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          SEO
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-a11y" data-tab="a11y">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+          </svg>
+          Tilgjengelegheit
+        </button>
+      </nav>
+
+      <!-- Tab panels -->
+      <div id="tab-meta" role="tabpanel" aria-label="Metadata" class="tab-panel active">
+        <div id="meta-content"></div>
+      </div>
+
+      <div id="tab-preview" role="tabpanel" aria-label="Forhåndsvisning av sosiale medium" class="tab-panel" hidden>
+        <div id="preview-content"></div>
+      </div>
+
+      <div id="tab-seo" role="tabpanel" aria-label="SEO-analyse" class="tab-panel" hidden>
+        <div id="seo-content"></div>
+      </div>
+
+      <div id="tab-a11y" role="tabpanel" aria-label="Tilgjengelegheitsrapport" class="tab-panel" hidden>
+        <div id="a11y-content"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Metadata-sjekker – open kjeldekode verktøy for webutviklarar</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
