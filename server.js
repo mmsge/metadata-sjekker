@@ -4,6 +4,7 @@ const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
+const { validateUrl } = require('./lib/validate');
 
 const app = express();
 app.use(express.json());
@@ -46,35 +47,6 @@ const STOP_WORDS = new Set([
   'one','two','three','into','these','those','each','other','such','after',
   'before','between','through','during','without','within','against','across',
 ]);
-
-// ---------------------------------------------------------------------------
-// URL validation
-// ---------------------------------------------------------------------------
-function validateUrl(urlStr) {
-  let parsed;
-  try {
-    parsed = new URL(urlStr);
-  } catch {
-    return { valid: false, error: 'INVALID_URL', message: 'Ugyldig URL-format. URL-en må starte med http:// eller https://' };
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    return { valid: false, error: 'INVALID_URL', message: 'Berre http:// og https:// er støtta.' };
-  }
-  const hostname = parsed.hostname.toLowerCase();
-  const privatePatterns = [
-    /^localhost$/,
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^::1$/,
-    /^0\.0\.0\.0$/,
-  ];
-  if (privatePatterns.some(p => p.test(hostname))) {
-    return { valid: false, error: 'PRIVATE_URL', message: 'Private eller lokale adresser er ikkje tillate.' };
-  }
-  return { valid: true };
-}
 
 // ---------------------------------------------------------------------------
 // Fetch helpers
